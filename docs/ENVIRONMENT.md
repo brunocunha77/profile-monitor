@@ -1,18 +1,26 @@
 # Configuracao de ambiente
 
-Crie um arquivo `.env` na raiz do repositorio copiando `.env.example`. Ele nunca deve ser enviado ao Git.
+Copie `.env.example` para `.env` na raiz. O `.env` e as sessoes locais sao ignorados pelo Git.
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-## Para abrir somente o dashboard local
+## Arquitetura local
 
-Para navegar e testar o fluxo da tela, preencha apenas estas variaveis. Nao informe senha, proxy nem conta coletora nesta etapa.
+| Processo | Porta | Comando |
+| --- | --- | --- |
+| Control API | `3001` | `python control_server.py` |
+| Interface | `8081` | `cd web; npm install; npm run dev` |
+| Manager de rodadas | sem porta | `python collector/manager.py` |
+
+Abra `http://127.0.0.1:8081` no navegador. O manager e o Control API devem ficar no mesmo computador para que a rodada manual seja consumida.
+
+## `.env` minimo para apenas abrir a interface
 
 ```env
-MONITOR_PORT=8081
-MONITOR_CONTROL_API_URL=http://127.0.0.1:8081
+MONITOR_PORT=3001
+MONITOR_CONTROL_API_URL=http://127.0.0.1:3001
 MONITOR_CONTROL_API_TOKEN=gere_uma_chave_aleatoria_com_32_ou_mais_caracteres
 COLLECTOR_USERNAME=
 COLLECTOR_PASSWORD=
@@ -26,38 +34,44 @@ Gere o token assim:
 python -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
-O dashboard permite cadastrar perfis e solicitar uma rodada. Sem o manager, a solicitacao permanece como `requested` e nenhuma coleta externa e executada.
+Sem conta, senha e proxy, a interface abre para navegar e cadastrar alvos, mas o botao de coleta permanece desabilitado.
 
-## Para habilitar uma coleta manual controlada
+## `.env` para rodadas manuais
 
-| Variavel | Uso | Como preencher |
-| --- | --- | --- |
-| `MONITOR_CONTROL_API_TOKEN` | Autentica manager e Control API. | Use a mesma chave aleatoria do servidor e do manager. |
-| `COLLECTOR_USERNAME` | Conta coletora autorizada. | Nome de usuario sem `@`. |
-| `COLLECTOR_PASSWORD` | Credencial da conta coletora. | Senha da conta. Nunca cole em documentacao, logs ou commits. |
+```env
+MONITOR_PORT=3001
+MONITOR_CONTROL_API_URL=http://127.0.0.1:3001
+MONITOR_CONTROL_API_TOKEN=uma_mesma_chave_aleatoria_com_32_ou_mais_caracteres
+COLLECTOR_USERNAME=usuario_da_conta_coletora_sem_arroba
+COLLECTOR_PASSWORD=senha_da_conta_coletora
+COLLECTOR_PROXY_URL=http://usuario:senha@host:porta
+MONITOR_SESSION_ROOT=./state
+FOLLOWERS_WINDOW=80
+RECENT_MEDIA_LIMIT=4
+LIKERS_PER_MEDIA=30
+PROFILE_ENRICHMENTS_PER_RUN=12
+WORKER_DISCOVERY_SECONDS=5
+```
 
-## Variaveis de rede e execucao
+| Variavel | Regra |
+| --- | --- |
+| `MONITOR_CONTROL_API_TOKEN` | Mesma chave no Control API e manager; nunca enviar ao Git. |
+| `COLLECTOR_USERNAME` | Conta coletora dedicada, sem `@`. |
+| `COLLECTOR_PASSWORD` | Senha da conta coletora. |
+| `COLLECTOR_PROXY_URL` | URL do proxy fixo usado somente pela conta coletora. Nao registrar a URL em logs, commits ou tickets. |
+| `MONITOR_SESSION_ROOT` | Pasta persistente da sessao e do baseline; nao apague entre rodadas. |
+| Limites de coleta | Comece com os valores do exemplo e ajuste com cautela. |
 
-| Variavel | Uso | Preenchimento local |
-| --- | --- | --- |
-| `MONITOR_PORT` | Porta do dashboard/Control API. | `8081`, exceto se ja estiver ocupada. |
-| `MONITOR_CONTROL_API_URL` | URL usada pelo manager. | `http://127.0.0.1:8081` no local. |
-| `COLLECTOR_PROXY_URL` | Proxy fixo da conta coletora. | Deixe vazio em demonstracao; em producao use a URL fornecida pelo provedor sem expo-la. |
-| `MONITOR_SESSION_ROOT` | Diretorio de sessoes e baseline. | `./state` no local; volume Docker em producao. |
-| `COLLECTOR_STATE_DIR` | Diretorio do worker por conta. | `./state/client-1` para teste local. |
-| `COLLECTOR_TARGET_IDS` | Alvo da rodada manual. | Deixe vazio; o manager preenche durante a rodada. |
-| `FOLLOWERS_WINDOW` | Tamanho da janela observada. | Comece com `80`. |
-| `RECENT_MEDIA_LIMIT` | Publicacoes recentes por rodada. | Comece com `4`. |
-| `LIKERS_PER_MEDIA` | Curtidas observadas por publicacao. | Comece com `30`. |
-| `PROFILE_ENRICHMENTS_PER_RUN` | Perfis detalhados por rodada. | Comece com `12`. |
+## Operacao local
 
-## Rodar localmente
+1. Preencha o `.env`.
+2. Instale Python: `python -m pip install -r collector/requirements.txt`.
+3. Em um terminal, execute `python control_server.py`.
+4. Em outro terminal, execute `python collector/manager.py`.
+5. Em um terceiro terminal, execute `cd web; npm install; npm run dev`.
+6. No navegador, adicione e confirme um perfil.
+7. Clique no icone de atualizar do perfil para solicitar **uma** rodada manual.
 
-1. Copie `.env.example` para `.env`.
-2. Para somente visualizar o painel, mantenha usuario, senha e proxy vazios.
-3. Instale dependencias: `pip install -r collector/requirements.txt`.
-4. Inicie o Control Plane: `python control_server.py`.
-5. Abra `http://127.0.0.1:8081`.
-6. Para uma coleta manual, preencha as credenciais no `.env` e inicie o manager: `python collector/manager.py`.
+Cada clique cria uma unica rodada. O manager nao repete a rodada automaticamente. Em checkpoint, feedback ou erro de autenticacao, o coletor informa a pausa e a proxima tentativa deve ser uma nova acao manual depois de resolver a conta no aplicativo oficial.
 
-O manager nao deve ser iniciado sem as variaveis obrigatorias. A interface nao mostra senha, token ou URL de proxy.
+A primeira coleta de cada alvo cria o baseline e nao deve ser interpretada como novos sinais. Somente comparacoes posteriores identificam novos seguidores, curtidas e comentarios dentro das janelas configuradas.

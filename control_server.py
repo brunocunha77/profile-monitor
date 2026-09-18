@@ -102,8 +102,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json({'prospects': []})
         if path == '/api/instagram/connection':
             connection = state['connection']
-            current = connection.get('username') if connection.get('status') == 'connected' else None
-            return self.send_json({'connected': bool(current), 'connection': {'username': current, 'status': 'connected'} if current else None})
+            status = connection.get('status')
+            if status in {'checkpoint', 'cooldown', 'error'}:
+                return self.send_json({'connected': False, 'connection': {'username': os.getenv('COLLECTOR_USERNAME', ''), 'status': status, 'last_error': connection.get('last_error'), 'updated_at': connection.get('updated_at')}})
+            username = os.getenv('COLLECTOR_USERNAME', '')
+            configured = bool(username and os.getenv('COLLECTOR_PASSWORD'))
+            return self.send_json({'connected': configured, 'connection': {'username': username, 'status': 'connected'} if configured else None})
         if path.startswith('/runs/') and path.endswith('/targets'):
             return self.send_json({'targets': [target for target in state['targets'] if target['active']]})
         return self.send_json({'error': 'Not found'}, HTTPStatus.NOT_FOUND)
@@ -195,6 +199,7 @@ class Handler(BaseHTTPRequestHandler):
 if __name__ == '__main__':
     print(f'Profile Monitor control plane: http://127.0.0.1:{PORT}')
     ThreadingHTTPServer(('127.0.0.1', PORT), Handler).serve_forever()
+
 
 
 
