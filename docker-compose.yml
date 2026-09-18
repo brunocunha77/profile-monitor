@@ -1,0 +1,17 @@
+services:
+  profile-monitor:
+    build:
+      context: .
+      dockerfile: collector/Dockerfile
+    env_file: .env
+    environment:
+      MONITOR_CONTROL_API_URL: ${MONITOR_CONTROL_API_URL}
+      MONITOR_CONTROL_API_TOKEN: ${MONITOR_CONTROL_API_TOKEN}
+      COLLECTOR_PROXY_URL: ${COLLECTOR_PROXY_URL:-}
+      COLLECTOR_STATE_DIR: /data/state
+    volumes:
+      - profile-monitor-state:/data/state
+    restart: unless-stopped
+
+volumes:
+  profile-monitor-state:
