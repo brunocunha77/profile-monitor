@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+
+from storage import StateStore
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
@@ -17,7 +19,7 @@ ROOT = Path(__file__).resolve().parent
 load_dotenv(ROOT / '.env')
 PORT = int(os.getenv('MONITOR_PORT', '8081'))
 TOKEN = os.getenv('MONITOR_CONTROL_API_TOKEN', '')
-DATA_PATH = ROOT / 'state' / 'control.json'
+STORE = StateStore(ROOT)
 
 
 def now() -> str:
@@ -25,18 +27,11 @@ def now() -> str:
 
 
 def load_state() -> dict:
-    if DATA_PATH.exists():
-        return json.loads(DATA_PATH.read_text(encoding='utf-8'))
-    return {
-        'connection': {'status': 'not_configured', 'last_error': None, 'updated_at': now()},
-        'targets': [], 'run': None, 'signals': [], 'prospect_statuses': {}, 'lead_ids': {},
-    }
+    return STORE.load()
 
 
 def save_state(state: dict) -> None:
-    DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
-    DATA_PATH.write_text(json.dumps(state, ensure_ascii=True, indent=2), encoding='utf-8')
-
+    STORE.save(state)
 
 def target_row(target: dict) -> dict:
     handle = target['handle']

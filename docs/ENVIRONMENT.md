@@ -75,3 +75,32 @@ WORKER_DISCOVERY_SECONDS=5
 Cada clique cria uma unica rodada. O manager nao repete a rodada automaticamente. Em checkpoint, feedback ou erro de autenticacao, o coletor informa a pausa e a proxima tentativa deve ser uma nova acao manual depois de resolver a conta no aplicativo oficial.
 
 A primeira coleta de cada alvo cria o baseline e nao deve ser interpretada como novos sinais. Somente comparacoes posteriores identificam novos seguidores, curtidas e comentarios dentro das janelas configuradas.
+## Persistencia opcional em banco
+
+Sem `DATABASE_URL`, o monitor usa o modo local e grava em `state/control.json`. Desligar os processos nao apaga dados: alvos, baseline, sinais e oportunidades continuam nessa pasta. Mantenha a pasta `state/` ao atualizar ou mover o projeto.
+
+Para persistir fora da maquina, informe uma `DATABASE_URL`. O banco e opcional; a interface e a coleta local continuam funcionando sem ele.
+
+### SQLite
+
+Boa opcao para um unico operador que quer um arquivo de banco separado:
+
+```env
+DATABASE_URL=sqlite:///./state/profile-monitor.sqlite3
+MONITOR_WORKSPACE_ID=local
+```
+
+### PostgreSQL
+
+Use quando quiser uma base central ou mais de um workspace. Instale o driver adicional e use uma chave de workspace distinta para cada usuario/cliente:
+
+```powershell
+python -m pip install -r collector/requirements-postgres.txt
+```
+
+```env
+DATABASE_URL=postgresql://usuario:senha@host:5432/profile_monitor
+MONITOR_WORKSPACE_ID=cliente-exemplo
+```
+
+`MONITOR_WORKSPACE_ID` separa os dados dentro da mesma base. A URL da base e segredo: mantenha-a somente no `.env`, nunca no Git.
