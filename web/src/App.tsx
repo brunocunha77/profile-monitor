@@ -6,7 +6,7 @@ import './styles.css';
 export default function App() {
   return <div className="shell">
     <aside className="sidebar">
-      <div className="brand"><span className="brand-mark">◉</span><span>Smart<span>CHAT</span></span></div>
+      <div className="brand"><span className="brand-mark">◉</span><span>Profile Monitor</span></div>
       <nav>
         <p className="nav-heading">ANÁLISE</p>
         <a className="nav-item active"><Target size={19}/><span>Pesquisa</span></a>
@@ -16,3 +16,4 @@ export default function App() {
     <Toaster position="bottom-right" richColors />
   </div>;
 }
+
