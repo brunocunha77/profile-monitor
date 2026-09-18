@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+html, body, #root { min-height: 100%; margin: 0; }
+body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #0f172a; }
+button, input { font: inherit; }
+.shell { min-height: 100vh; display: flex; background: #f8f9fc; }
+.sidebar { position: fixed; width: 256px; inset: 0 auto 0 0; background: #fff; border-right: 1px solid #e5e7eb; padding: 28px 16px; overflow-y: auto; }
+.brand { height: 74px; display: flex; align-items: flex-start; justify-content: center; gap: 3px; font-size: 17px; color: #3f3f46; font-weight: 500; }
+.brand span span { color: #9b35f5; font-weight: 600; }
+.brand-mark { color: #9b35f5; font-size: 23px; line-height: 18px; }
+.nav-heading { color: #a78bfa; font-size: 11px; font-weight: 500; margin: 22px 12px 9px; }
+.nav-item { height: 36px; display: flex; align-items: center; gap: 13px; padding: 0 12px; border-radius: 7px; color: #7558ba; font-size: 14px; margin: 3px 0; text-decoration: none; cursor: default; }
+.nav-item.active { background: #c4b5fd; color: #4c3b77; }
+.page { width: calc(100% - 256px); margin-left: 256px; min-height: 100vh; }
+@media (max-width: 780px) { .sidebar { display: none; } .page { width: 100%; margin-left: 0; } }
+

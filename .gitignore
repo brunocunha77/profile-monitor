@@ -4,3 +4,8 @@ __pycache__/
 state/
 *.sqlite3
 *.log
+web/node_modules/
+web/dist/
+
+web/*.tsbuildinfo
+
