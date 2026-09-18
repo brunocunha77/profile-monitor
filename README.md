@@ -10,6 +10,12 @@ Servico independente para monitorar sinais publicos de perfis do Instagram escol
 - Sessao, SQLite e credenciais nunca entram no Git.
 - `follow_observed` e `like` indicam primeira observacao dentro da janela; nao afirmam o horario exato da acao.
 
+## Dashboard local
+
+Execute `python control_server.py` e abra `http://127.0.0.1:8081`. A tela permite cadastrar alvos e solicitar uma rodada manual. Ela nao inicia o collector sem o manager e as variaveis configuradas.
+
+Veja [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) para preencher `.env`.
+
 ## Contrato da Control API
 
 O monitor nao depende do Sales OS. Ele precisa de uma Control API que disponibilize:
@@ -26,5 +32,5 @@ O Sales OS pode implementar esse contrato por adaptador HTTP, mas nao faz parte 
 
 1. Copie `.env.example` para `.env` e preencha somente um ambiente de teste autorizado.
 2. Instale `pip install -r collector/requirements.txt`.
-3. Execute `python collector/collector.py` para uma rodada local configurada ou `python collector/manager.py` com uma Control API.
+3. Execute `python control_server.py` para o painel ou `python collector/manager.py` para consumir rodadas manuais.
 4. Nunca use contas, proxies, cookies ou arquivos de sessao de producao no Git.
