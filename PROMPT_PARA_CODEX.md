@@ -1,45 +1,55 @@
-# Prompt para iniciar o Profile Monitor
+# Prompt para iniciar o Profile Monitor pelo chat
 
-Copie e cole o texto abaixo em uma nova sessao do Codex ou em outra IA. Ele ja contem a URL para baixar o repositorio, configurar e iniciar o ambiente local.
+Copie e cole todo o texto abaixo em uma nova sessao do Codex ou Cloud. O operador final deve interagir somente pelo chat: nao deve editar arquivos, usar terminal ou abrir codigo.
 
 ```text
-Prepare o Profile Monitor para uso LOCAL. Primeiro, clone o repositorio:
+Prepare o Profile Monitor para uso LOCAL. O operador final nao vai editar .env, usar terminal, nem abrir codigo. Conduza tudo pelo chat e execute os comandos no ambiente disponivel.
+
+Primeiro, clone o repositorio e entre na pasta:
 
 git clone https://github.com/brunocunha77/profile-monitor.git
 cd profile-monitor
 
-Seu objetivo e instalar, configurar e iniciar o monitoramento manual de perfis do Instagram. Nao altere a arquitetura, nao envie dados para producao e nao use credenciais existentes no Git, em logs ou em commits.
+Leia README.md e docs/ENVIRONMENT.md antes de executar uma coleta.
 
-1. Leia README.md e docs/ENVIRONMENT.md antes de executar qualquer coleta.
-2. Confira se existem Python 3.11+ e Node.js 20+ no ambiente.
-3. Se ainda nao existir, crie .env a partir de .env.example. Nunca mostre nem registre valores secretos.
-4. Peça ao operador para preencher manualmente no .env:
-   - MONITOR_CONTROL_API_TOKEN: gere uma chave com pelo menos 32 caracteres;
-   - COLLECTOR_USERNAME: conta coletora dedicada, sem @;
-   - COLLECTOR_PASSWORD: senha dessa conta;
-   - COLLECTOR_PROXY_URL: proxy HTTP fixo associado a essa conta;
-   - MONITOR_SESSION_ROOT=./state;
-   - DATABASE_URL: opcional. Vazio usa state/control.json local; sqlite:///./state/profile-monitor.sqlite3 usa SQLite; postgresql://... usa PostgreSQL;
-   - MONITOR_WORKSPACE_ID: opcional. Use uma chave diferente por cliente quando compartilhar a mesma base.
-   Para somente visualizar a interface, as tres variaveis COLLECTOR podem ficar vazias.
-5. Instale as dependencias:
-   - python -m pip install -r collector/requirements.txt
-   - Se DATABASE_URL comecar com postgresql://, execute tambem python -m pip install -r collector/requirements-postgres.txt
-   - cd web; npm install; cd ..
-6. Inicie e mantenha ativos em terminais separados, todos dentro da pasta profile-monitor:
-   - python control_server.py
-   - python collector/manager.py
-   - cd web; npm run dev -- --host 127.0.0.1 --port 8081
-7. Confirme que a API responde em http://127.0.0.1:3001/api/status e informe ao operador que o painel esta em http://127.0.0.1:8081.
-8. Para testar coleta, espere o operador adicionar um perfil e clicar manualmente em coletar. Cada clique deve executar apenas uma rodada; nao implemente tentativas automaticas.
-9. Se houver checkpoint, feedback, desafio ou erro de autenticacao do Instagram, pare a rodada e mostre o erro real. Nao tente contornar verificacoes, nao troque proxy automaticamente e nao repita o login.
-10. Antes de encerrar, verifique a compilacao com cd web; npm run build e informe: processos ativos, URL local, o que foi validado e qualquer bloqueio real.
+## Regra de interacao
 
-A primeira coleta de um alvo cria o baseline. Apenas coletas posteriores podem apontar novos seguidores, curtidas ou comentarios.
+Faca uma entrevista curta pelo chat. Pergunte apenas o que ainda nao estiver configurado e uma pergunta por vez. O operador deve responder no chat; voce deve gravar cada valor no .env local sem mostrar, repetir, incluir em logs ou commitar segredos. Nunca peça ao operador para abrir ou editar um arquivo.
 
-Sem DATABASE_URL, os dados persistem na pasta state/ mesmo depois de desligar localhost. Com DATABASE_URL, persistem na base configurada e sao separados por MONITOR_WORKSPACE_ID.
+Pergunte, nesta ordem:
+
+1. A pessoa quer apenas abrir a interface agora ou configurar uma coleta real?
+2. Se configurar coleta real: qual e o usuario da conta coletora, sem @?
+3. Qual e a senha da conta coletora?
+4. Qual e a URL completa do proxy HTTP fixo dessa conta, no formato http://usuario:senha@host:porta?
+5. Ela quer persistencia apenas naquele computador ou uma base externa?
+6. Se escolher base externa: qual e a DATABASE_URL e qual identificador deve ser usado em MONITOR_WORKSPACE_ID? Nao mostre a URL depois de recebida.
+
+Gere MONITOR_CONTROL_API_TOKEN localmente com pelo menos 32 caracteres. Crie ou atualize .env a partir de .env.example usando as respostas. Para modo apenas interface, deixe COLLECTOR_USERNAME, COLLECTOR_PASSWORD e COLLECTOR_PROXY_URL vazios. Para persistencia local, deixe DATABASE_URL vazio. Use MONITOR_SESSION_ROOT=./state.
+
+Instale as dependencias:
+
+- python -m pip install -r collector/requirements.txt
+- Se DATABASE_URL comecar com postgresql://, execute tambem python -m pip install -r collector/requirements-postgres.txt
+- cd web; npm install; cd ..
+
+Inicie e mantenha ativos os processos necessarios:
+
+- python control_server.py
+- python collector/manager.py
+- cd web; npm run dev -- --host 127.0.0.1 --port 8081
+
+Verifique que a API responde em http://127.0.0.1:3001/api/status. Informe ao operador somente a URL pronta do painel: http://127.0.0.1:8081. Se estiver em Cloud e essa URL nao puder ser acessada pelo operador, use o mecanismo de preview/porta encaminhada do ambiente e entregue a URL publica ou de preview gerada pelo ambiente.
+
+Para testar coleta, explique no chat como adicionar um perfil e clicar manualmente em coletar na tela. Cada clique deve executar uma unica rodada; nao implemente tentativas automaticas.
+
+Se houver checkpoint, feedback, desafio ou erro de autenticacao do Instagram, pare a rodada, mostre o erro real de forma compreensivel e diga qual acao manual o operador precisa tomar na propria conta. Nao tente contornar verificacoes, nao troque proxy automaticamente e nao repita o login.
+
+Antes de encerrar, execute cd web; npm run build. Informe no chat: URL do painel, modo de persistencia usado, processos ativos, o que foi validado e qualquer bloqueio real. Nunca mostre senha, token, proxy ou DATABASE_URL.
+
+A primeira coleta de um alvo cria o baseline. Apenas coletas posteriores podem apontar novos seguidores, curtidas ou comentarios. Sem DATABASE_URL, os dados persistem na pasta state/ mesmo depois de desligar localhost. Com DATABASE_URL, persistem na base configurada e sao separados por MONITOR_WORKSPACE_ID.
 ```
 
-## Observacao para ambientes cloud
+## Limite do chat comum
 
-O painel pode ser instalado em cloud, mas o fluxo descrito acima e deliberadamente local. Uma coleta real so deve ser iniciada quando a conta coletora, a sessao e o proxy configurados pertencerem ao operador e estiverem autorizados para aquele ambiente. Nao mova automaticamente uma sessao local para VPS ou cloud.
+Esse fluxo requer Codex, Claude Code ou Cloud com permissao para clonar repositorios, criar arquivos e iniciar processos. Um chat sem acesso ao ambiente local nao consegue instalar ou executar o projeto sozinho.
