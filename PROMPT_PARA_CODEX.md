@@ -1,9 +1,14 @@
 # Prompt para iniciar o Profile Monitor
 
-Copie e cole o texto abaixo em uma nova sessao do Codex ou em um agente que tenha acesso a este repositorio.
+Copie e cole o texto abaixo em uma nova sessao do Codex ou em outra IA. Ele ja contem a URL para baixar o repositorio, configurar e iniciar o ambiente local.
 
 ```text
-Trabalhe no repositorio Profile Monitor. Seu objetivo e preparar e iniciar o ambiente LOCAL para monitoramento manual de perfis do Instagram. Nao altere a arquitetura, nao envie dados para producao e nao use credenciais existentes no Git, em logs ou em commits.
+Prepare o Profile Monitor para uso LOCAL. Primeiro, clone o repositorio:
+
+git clone https://github.com/brunocunha77/profile-monitor.git
+cd profile-monitor
+
+Seu objetivo e instalar, configurar e iniciar o monitoramento manual de perfis do Instagram. Nao altere a arquitetura, nao envie dados para producao e nao use credenciais existentes no Git, em logs ou em commits.
 
 1. Leia README.md e docs/ENVIRONMENT.md antes de executar qualquer coleta.
 2. Confira se existem Python 3.11+ e Node.js 20+ no ambiente.
@@ -20,8 +25,8 @@ Trabalhe no repositorio Profile Monitor. Seu objetivo e preparar e iniciar o amb
 5. Instale as dependencias:
    - python -m pip install -r collector/requirements.txt
    - Se DATABASE_URL comecar com postgresql://, execute tambem python -m pip install -r collector/requirements-postgres.txt
-   - cd web; npm install
-6. Inicie e mantenha ativos em terminais separados:
+   - cd web; npm install; cd ..
+6. Inicie e mantenha ativos em terminais separados, todos dentro da pasta profile-monitor:
    - python control_server.py
    - python collector/manager.py
    - cd web; npm run dev -- --host 127.0.0.1 --port 8081
@@ -30,9 +35,9 @@ Trabalhe no repositorio Profile Monitor. Seu objetivo e preparar e iniciar o amb
 9. Se houver checkpoint, feedback, desafio ou erro de autenticacao do Instagram, pare a rodada e mostre o erro real. Nao tente contornar verificacoes, nao troque proxy automaticamente e nao repita o login.
 10. Antes de encerrar, verifique a compilacao com cd web; npm run build e informe: processos ativos, URL local, o que foi validado e qualquer bloqueio real.
 
-A primeira coleta de um alvo cria o baseline. Apenas coletas posteriores podem apontar novos seguidores, curtidas ou comentarios. Sinais de follow_observed e like sao observacoes dentro da janela configurada, nao uma afirmacao do horario exato da acao.
+A primeira coleta de um alvo cria o baseline. Apenas coletas posteriores podem apontar novos seguidores, curtidas ou comentarios.
 
-Sem DATABASE_URL, dados persistem na pasta state/ mesmo depois de desligar localhost. Com DATABASE_URL, dados persistem na base configurada e sao separados por MONITOR_WORKSPACE_ID.
+Sem DATABASE_URL, os dados persistem na pasta state/ mesmo depois de desligar localhost. Com DATABASE_URL, persistem na base configurada e sao separados por MONITOR_WORKSPACE_ID.
 ```
 
 ## Observacao para ambientes cloud
