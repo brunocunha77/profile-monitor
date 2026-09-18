@@ -13,10 +13,13 @@ Trabalhe no repositorio Profile Monitor. Seu objetivo e preparar e iniciar o amb
    - COLLECTOR_USERNAME: conta coletora dedicada, sem @;
    - COLLECTOR_PASSWORD: senha dessa conta;
    - COLLECTOR_PROXY_URL: proxy HTTP fixo associado a essa conta;
-   - MONITOR_SESSION_ROOT=./state.
+   - MONITOR_SESSION_ROOT=./state;
+   - DATABASE_URL: opcional. Vazio usa state/control.json local; sqlite:///./state/profile-monitor.sqlite3 usa SQLite; postgresql://... usa PostgreSQL;
+   - MONITOR_WORKSPACE_ID: opcional. Use uma chave diferente por cliente quando compartilhar a mesma base.
    Para somente visualizar a interface, as tres variaveis COLLECTOR podem ficar vazias.
 5. Instale as dependencias:
    - python -m pip install -r collector/requirements.txt
+   - Se DATABASE_URL comecar com postgresql://, execute tambem python -m pip install -r collector/requirements-postgres.txt
    - cd web; npm install
 6. Inicie e mantenha ativos em terminais separados:
    - python control_server.py
@@ -28,6 +31,8 @@ Trabalhe no repositorio Profile Monitor. Seu objetivo e preparar e iniciar o amb
 10. Antes de encerrar, verifique a compilacao com cd web; npm run build e informe: processos ativos, URL local, o que foi validado e qualquer bloqueio real.
 
 A primeira coleta de um alvo cria o baseline. Apenas coletas posteriores podem apontar novos seguidores, curtidas ou comentarios. Sinais de follow_observed e like sao observacoes dentro da janela configurada, nao uma afirmacao do horario exato da acao.
+
+Sem DATABASE_URL, dados persistem na pasta state/ mesmo depois de desligar localhost. Com DATABASE_URL, dados persistem na base configurada e sao separados por MONITOR_WORKSPACE_ID.
 ```
 
 ## Observacao para ambientes cloud
