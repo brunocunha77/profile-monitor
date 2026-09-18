@@ -14,7 +14,7 @@ Servico independente para monitorar sinais publicos de perfis do Instagram escol
 
 Execute `python control_server.py` e abra `http://127.0.0.1:8081`. A tela permite cadastrar alvos e solicitar uma rodada manual. Ela nao inicia o collector sem o manager e as variaveis configuradas.
 
-Veja [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md), inclusive a persistência opcional em SQLite ou PostgreSQL para preencher `.env`. Para entregar o repositório a outro operador ou iniciar em uma nova sessão sem editar arquivos, use [PROMPT_PARA_CODEX.md](PROMPT_PARA_CODEX.md).
+Veja [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md), inclusive a persistência opcional em SQLite ou PostgreSQL para preencher `.env`. Para entregar o repositório a outro operador ou iniciar em uma nova sessão sem editar arquivos, use [PROMPT_PARA_CODEX.md](PROMPT_PARA_CODEX.md). Para conferir uma instalacao antes da entrega, use [VALIDACAO_PARA_IA.md](VALIDACAO_PARA_IA.md).
 
 ## Contrato da Control API
 
