@@ -84,9 +84,10 @@ function Score({ item }: { item: Opportunity }) {
 }
 
 function ProspectAvatar({ item, clientId, size }: { item: Opportunity; clientId?: number; size: 'sm' | 'lg' }) {
-  const [src, setSrc] = useState<string | null>(null);
+  const [src, setSrc] = useState<string | null>(item.avatar || null);
   useEffect(() => {
-    if (!clientId || !item.avatar) { setSrc(null); return; }
+    if (item.avatar) { setSrc(item.avatar); return; }
+    if (!clientId) { setSrc(null); return; }
     let active = true; let objectUrl = '';
     salesSignalsService.getProspectImage(clientId, item.id).then(url => { objectUrl = url; if (active) setSrc(url); }).catch(() => { if (active) setSrc(null); });
     return () => { active = false; if (objectUrl) URL.revokeObjectURL(objectUrl); };

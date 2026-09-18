@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import secrets
+import hashlib
 from datetime import datetime, timezone
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -28,7 +29,7 @@ def load_state() -> dict:
         return json.loads(DATA_PATH.read_text(encoding='utf-8'))
     return {
         'connection': {'status': 'not_configured', 'last_error': None, 'updated_at': now()},
-        'targets': [], 'run': None, 'signals': [],
+        'targets': [], 'run': None, 'signals': [], 'prospect_statuses': {}, 'lead_ids': {},
     }
 
 
@@ -51,7 +52,8 @@ def target_row(target: dict) -> dict:
     }
 
 
-def public_state(state: dict) -> dict:    return {
+def public_state(state: dict) -> dict:
+    return {
         **state,
         'configuration': {
             'control_token': bool(TOKEN),
@@ -62,6 +64,53 @@ def public_state(state: dict) -> dict:    return {
     }
 
 
+
+def prospect_id(actor_key: str) -> int:
+    return int(hashlib.sha256(actor_key.encode('utf-8')).hexdigest()[:12], 16)
+
+
+def signal_score(signal_type: str) -> int:
+    return {'comment': 50, 'like': 18, 'follow_observed': 20}.get(signal_type, 10)
+
+
+def prospect_rows(state: dict) -> list[dict]:
+    grouped: dict[str, dict] = {}
+    seen_signals: set[str] = set()
+    for signal in state.get('signals', []):
+        actor = signal.get('actor') or {}
+        actor_key = str(actor.get('id') or actor.get('handle') or '').strip().lower()
+        if not actor_key:
+            continue
+        target = signal.get('target') or {}
+        unique_key = str(signal.get('external_id') or f"{actor_key}:{signal.get('signal_type')}:{signal.get('occurred_at')}:{target.get('handle')}")
+        if unique_key in seen_signals:
+            continue
+        seen_signals.add(unique_key)
+        row = grouped.setdefault(actor_key, {'actor': actor, 'signals': []})
+        row['actor'] = {**row['actor'], **{key: value for key, value in actor.items() if value not in (None, '')}}
+        row['signals'].append(signal)
+
+    statuses = state.setdefault('prospect_statuses', {})
+    lead_ids = state.setdefault('lead_ids', {})
+    prospects = []
+    for actor_key, data in grouped.items():
+        actor = data['actor']
+        signals = sorted(data['signals'], key=lambda item: item.get('occurred_at') or '', reverse=True)
+        targets = {str((item.get('target') or {}).get('handle') or '') for item in signals}
+        kinds = {item.get('signal_type') for item in signals}
+        score = min(100, sum(signal_score(str(item.get('signal_type'))) for item in signals) + (15 if len(targets) > 1 else 0))
+        confidence = 'high' if 'comment' in kinds or len(targets) > 1 else ('medium' if len(signals) > 1 else 'low')
+        row_id = prospect_id(actor_key)
+        rendered_signals = []
+        for index, signal in enumerate(signals, start=1):
+            target = signal.get('target') or {}
+            rendered_signals.append({'id': index, 'signal_type': signal.get('signal_type', 'follow_observed'), 'target_handle': target.get('handle', ''), 'target_label': None, 'content': signal.get('content'), 'occurred_at': signal.get('occurred_at') or now(), 'base_score': signal_score(str(signal.get('signal_type'))), 'score_reason': signal.get('score_reason')})
+        prospects.append({'id': row_id, 'source': 'instagram', 'actor_id': str(actor.get('id') or actor_key), 'actor_handle': actor.get('handle') or actor_key, 'actor_name': actor.get('name'), 'actor_url': actor.get('url') or f"https://instagram.com/{actor.get('handle') or actor_key}", 'actor_bio': actor.get('bio'), 'actor_followers': actor.get('followers'), 'actor_posts': actor.get('posts'), 'actor_is_private': actor.get('is_private'), 'actor_profile_picture_url': actor.get('profile_picture_url'), 'score': score, 'score_reason': 'Sinais recentes observados na audiência monitorada.', 'confidence': confidence, 'signal_count': len(signals), 'target_count': len(targets), 'first_signal_at': signals[-1].get('occurred_at'), 'last_signal_at': signals[0].get('occurred_at'), 'status': statuses.get(str(row_id), 'novo'), 'lead_id': lead_ids.get(str(row_id)), 'signals': rendered_signals})
+    return sorted(prospects, key=lambda row: (row['last_signal_at'] or '', row['score']), reverse=True)
+
+
+def find_prospect(state: dict, requested_id: int) -> dict | None:
+    return next((row for row in prospect_rows(state) if row['id'] == requested_id), None)
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *_args):
         return
@@ -99,7 +148,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == '/api/targets':
             return self.send_json({'targets': [target_row(target) for target in state['targets']]})
         if path == '/api/prospects':
-            return self.send_json({'prospects': []})
+            return self.send_json({'prospects': prospect_rows(state)})
         if path == '/api/instagram/connection':
             connection = state['connection']
             status = connection.get('status')
@@ -129,6 +178,20 @@ class Handler(BaseHTTPRequestHandler):
             target = {'id': len(state['targets']) + 1, 'handle': handle, 'active': True, 'collection_status': 'pending', 'last_collected_at': None, 'last_collection_error': None}
             state['targets'].append(target); save_state(state)
             return self.send_json(target_row(target), 201)
+        if path.startswith('/api/prospects/') and path.endswith('/enrich'):
+            try: requested_id = int(path.split('/')[3])
+            except (ValueError, IndexError): return self.send_json({'error': 'Oportunidade inválida.'}, 400)
+            prospect = find_prospect(state, requested_id)
+            if not prospect: return self.send_json({'error': 'Oportunidade não encontrada.'}, 404)
+            return self.send_json(prospect)
+        if path.startswith('/api/prospects/') and path.endswith('/lead'):
+            try: requested_id = int(path.split('/')[3])
+            except (ValueError, IndexError): return self.send_json({'error': 'Oportunidade inválida.'}, 400)
+            if not find_prospect(state, requested_id): return self.send_json({'error': 'Oportunidade não encontrada.'}, 404)
+            lead_id = state.setdefault('lead_ids', {}).setdefault(str(requested_id), requested_id)
+            state.setdefault('prospect_statuses', {})[str(requested_id)] = 'convertido'
+            save_state(state)
+            return self.send_json({'lead_id': lead_id})
         if path.startswith('/api/targets/') and path.endswith('/collect'):
             try: target_id = int(path.split('/')[3])
             except ValueError: return self.send_json({'error': 'Alvo invalido.'}, 400)
@@ -172,6 +235,16 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PATCH(self) -> None:
         path = urlparse(self.path).path; state = load_state()
+        if path.startswith('/api/prospects/') and path.endswith('/status'):
+            try: requested_id = int(path.split('/')[3])
+            except (ValueError, IndexError): return self.send_json({'error': 'Oportunidade inválida.'}, 400)
+            if not find_prospect(state, requested_id): return self.send_json({'error': 'Oportunidade não encontrada.'}, 404)
+            status = self.body().get('status')
+            if status not in {'novo', 'em_contato', 'convertido', 'descartado'}:
+                return self.send_json({'error': 'Status inválido.'}, 400)
+            state.setdefault('prospect_statuses', {})[str(requested_id)] = status
+            save_state(state)
+            return self.send_json(find_prospect(state, requested_id))
         if path.startswith('/api/targets/'):
             try: target_id = int(path.split('/')[3])
             except (ValueError, IndexError): return self.send_json({'error': 'Alvo invalido.'}, 400)
