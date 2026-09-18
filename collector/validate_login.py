@@ -12,7 +12,7 @@ def main():
     target.parent.mkdir(parents=True, exist_ok=True)
 
     client = Client()
-    proxy_url = os.getenv("INSTAGRAM_PROXY_URL", "").strip()
+    proxy_url = os.getenv("COLLECTOR_PROXY_URL", "").strip()
     if proxy_url:
         client.set_proxy(proxy_url)
     client.delay_range = [2, 5]

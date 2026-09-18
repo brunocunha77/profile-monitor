@@ -23,9 +23,9 @@ load_dotenv()
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(message)s")
 LOG = logging.getLogger("sales-os-instagram")
 
-WEBHOOK_URL = os.environ["SALES_OS_SIGNAL_WEBHOOK_URL"].rstrip("/")
-USERNAME = os.getenv("INSTAGRAM_USERNAME", "")
-PASSWORD = os.getenv("INSTAGRAM_PASSWORD", "")
+WEBHOOK_URL = os.environ["MONITOR_SIGNAL_WEBHOOK_URL"].rstrip("/")
+USERNAME = os.getenv("COLLECTOR_USERNAME", "")
+PASSWORD = os.getenv("COLLECTOR_PASSWORD", "")
 INTERVAL = int(os.getenv("COLLECT_INTERVAL_SECONDS", "900"))
 FOLLOWERS_WINDOW = int(os.getenv("FOLLOWERS_WINDOW", "80"))
 MEDIA_LIMIT = int(os.getenv("RECENT_MEDIA_LIMIT", "4"))
@@ -33,7 +33,7 @@ LIKERS_LIMIT = int(os.getenv("LIKERS_PER_MEDIA", "30"))
 PROFILE_ENRICHMENTS_PER_RUN = int(os.getenv("PROFILE_ENRICHMENTS_PER_RUN", "12"))
 STATE_DIR = Path(os.getenv("COLLECTOR_STATE_DIR", "./state")).resolve()
 RUN_ONCE = os.getenv("RUN_ONCE", "false").lower() == "true"
-PROXY_URL = os.getenv("INSTAGRAM_PROXY_URL", "").strip()
+PROXY_URL = os.getenv("COLLECTOR_PROXY_URL", "").strip()
 TARGET_IDS = {int(value) for value in os.getenv("COLLECTOR_TARGET_IDS", "").split(",") if value.strip().isdigit()}
 STATE_DIR.mkdir(parents=True, exist_ok=True)
 

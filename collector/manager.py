@@ -16,9 +16,9 @@ logging.basicConfig(
 )
 LOG = logging.getLogger("instagram-manager")
 
-API_URL = os.environ["SALES_OS_API_URL"].rstrip("/")
-SECRET = os.environ["SIGNAL_COLLECTOR_INTERNAL_SECRET"]
-STATE_ROOT = Path(os.getenv("INSTAGRAM_SESSION_ROOT", "/data/instagram"))
+API_URL = os.environ["MONITOR_CONTROL_API_URL"].rstrip("/")
+SECRET = os.environ["MONITOR_CONTROL_API_TOKEN"]
+STATE_ROOT = Path(os.getenv("MONITOR_SESSION_ROOT", "/data/instagram"))
 REFRESH_SECONDS = int(os.getenv("WORKER_DISCOVERY_SECONDS", "60"))
 RETRY_INITIAL_SECONDS = int(os.getenv("WORKER_RETRY_INITIAL_SECONDS", "900"))
 RETRY_MAX_SECONDS = int(os.getenv("WORKER_RETRY_MAX_SECONDS", "21600"))
@@ -26,8 +26,8 @@ RETRY_MAX_SECONDS = int(os.getenv("WORKER_RETRY_MAX_SECONDS", "21600"))
 
 def workers(active_client_ids: list[int]) -> dict:
     response = requests.post(
-        f"{API_URL}/internal/sales-signals/workers",
-        headers={"x-collector-secret": SECRET},
+        f"{API_URL}/v1/workers/claim",
+        headers={"Authorization": f"Bearer {SECRET}"},
         json={"active_client_ids": active_client_ids},
         timeout=30,
     )
@@ -85,12 +85,12 @@ def main() -> None:
                 env = os.environ.copy()
                 env.update(
                     {
-                        "SALES_OS_SIGNAL_WEBHOOK_URL": item["webhook_url"],
+                        "MONITOR_SIGNAL_WEBHOOK_URL": item["webhook_url"],
                         "COLLECTOR_STATE_DIR": str(state_dir),
                         "RUN_ONCE": "true",
                         "COLLECTOR_TARGET_IDS": str(item.get("target_id") or ""),
-                        "INSTAGRAM_USERNAME": str(item.get("username") or ""),
-                        "INSTAGRAM_PASSWORD": str(item.get("password") or ""),
+                        "COLLECTOR_USERNAME": str(item.get("username") or ""),
+                        "COLLECTOR_PASSWORD": str(item.get("password") or ""),
                     }
                 )
                 requests.patch(

@@ -15,7 +15,7 @@ def main() -> None:
     if not handle or not session_path.exists():
         raise RuntimeError("Conta coletora desconectada ou perfil invalido.")
     client = Client()
-    proxy_url = os.getenv("INSTAGRAM_PROXY_URL", "").strip()
+    proxy_url = os.getenv("COLLECTOR_PROXY_URL", "").strip()
     if proxy_url:
         client.set_proxy(proxy_url)
     client.set_country("BR"); client.set_country_code(55); client.set_locale("pt_BR"); client.set_timezone_name("America/Sao_Paulo"); client.set_timezone_offset(-10800)
